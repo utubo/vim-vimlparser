@@ -1364,23 +1364,11 @@ function! s:VimLParser.parse_cmd_function_or_def(is_def) abort
   call self.reader.skip_white()
 
   if left.type ==# s:NODE_IDENTIFIER
-    let s = left.value
-    let ss = split(s, '\zs')
     if a:is_def
-      if stridx(s, '#') !=# -1
-        throw s:Err('E1263: Cannot use name with # in Vim9 script, use export instead', left.pos)
-      endif
-      let i = 0
-      let scope = join(ss[0:1], '')
-      if scope ==# 's:'
-        throw s:Err('E1268: Cannot use s: in Vim9 script', left.pos)
-      elseif scope ==# 'g:'
-        let i = 2
-      endif
-      if ss[i] !=# '_' && !s:isupper(ss[i])
-        throw s:Err(printf('E1267: Function name must start with a capital: %s', s), left.pos)
-      endif
+      call self.validate_defname(left)
     else
+      let s = left.value
+      let ss = split(s, '\zs')
       if ss[0] !=# '<' && ss[0] !=# '_' && !s:isupper(ss[0]) && stridx(s, ':') ==# -1 && stridx(s, '#') ==# -1
         throw s:Err(printf('E128: Function name must start with a capital or contain a colon: %s', s), left.pos)
       endif
@@ -1502,6 +1490,23 @@ function! s:VimLParser.parse_cmd_function_or_def(is_def) abort
   endif
   call self.add_node(node)
   call self.push_context(node)
+endfunction
+
+function! s:VimLParser.validate_defname(left) abort
+  let s = a:left.value
+  if stridx(s, '#') !=# -1
+    throw s:Err('E1263: Cannot use name with # in Vim9 script, use export instead', a:left.pos)
+  endif
+  let i = 0
+  let scope = s[0:1]
+  if scope ==# 's:'
+    throw s:Err('E1268: Cannot use s: in Vim9 script', a:left.pos)
+  elseif scope ==# 'g:'
+    let i = 2
+  endif
+  if s[i] !=# '_' && !s:isupper(s[i])
+    throw s:Err(printf('E1267: Function name must start with a capital: %s', s), a:left.pos)
+  endif
 endfunction
 
 function! s:VimLParser.parse_defarg(tokenizer, current_token) abort
