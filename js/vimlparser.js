@@ -1651,25 +1651,12 @@ VimLParser.prototype.parse_cmd_function_or_def = function(is_def) {
     var left = this.parse_lvalue_func();
     this.reader.skip_white();
     if (left.type == NODE_IDENTIFIER) {
-        var s = left.value;
-        var ss = viml_split(s, "\\zs");
         if (is_def) {
-            if (viml_stridx(s, "#") != -1) {
-                throw Err("E1263: Cannot use name with # in Vim9 script, use export instead", left.pos);
-            }
-            var i = 0;
-            var scope = viml_join(ss.slice(0, 1 + 1), "");
-            if (scope == "s:") {
-                throw Err("E1268: Cannot use s: in Vim9 script", left.pos);
-            }
-            else if (scope == "g:") {
-                var i = 2;
-            }
-            if (ss[i] != "_" && !isupper(ss[i])) {
-                throw Err(viml_printf("E1267: Function name must start with a capital: %s", s), left.pos);
-            }
+            this.validate_defname(left);
         }
         else {
+            var s = left.value;
+            var ss = viml_split(s, "\\zs");
             if (ss[0] != "<" && ss[0] != "_" && !isupper(ss[0]) && viml_stridx(s, ":") == -1 && viml_stridx(s, "#") == -1) {
                 throw Err(viml_printf("E128: Function name must start with a capital or contain a colon: %s", s), left.pos);
             }
@@ -1804,6 +1791,24 @@ VimLParser.prototype.parse_cmd_function_or_def = function(is_def) {
     }
     this.add_node(node);
     this.push_context(node);
+}
+
+VimLParser.prototype.validate_defname = function(left) {
+    var s = left.value;
+    if (viml_stridx(s, "#") != -1) {
+        throw Err("E1263: Cannot use name with # in Vim9 script, use export instead", left.pos);
+    }
+    var i = 0;
+    var scope = s.slice(0, 1 + 1);
+    if (scope == "s:") {
+        throw Err("E1268: Cannot use s: in Vim9 script", left.pos);
+    }
+    else if (scope == "g:") {
+        var i = 2;
+    }
+    if (s[i] != "_" && !isupper(s[i])) {
+        throw Err(viml_printf("E1267: Function name must start with a capital: %s", s), left.pos);
+    }
 }
 
 VimLParser.prototype.parse_defarg = function(tokenizer, current_token) {

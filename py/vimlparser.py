@@ -1362,20 +1362,11 @@ class VimLParser:
         left = self.parse_lvalue_func()
         self.reader.skip_white()
         if left.type == NODE_IDENTIFIER:
-            s = left.value
-            ss = viml_split(s, "\\zs")
             if is_def:
-                if viml_stridx(s, "#") != -1:
-                    raise VimLParserException(Err("E1263: Cannot use name with # in Vim9 script, use export instead", left.pos))
-                i = 0
-                scope = viml_join(ss[0:1 + 1], "")
-                if scope == "s:":
-                    raise VimLParserException(Err("E1268: Cannot use s: in Vim9 script", left.pos))
-                elif scope == "g:":
-                    i = 2
-                if ss[i] != "_" and not isupper(ss[i]):
-                    raise VimLParserException(Err(viml_printf("E1267: Function name must start with a capital: %s", s), left.pos))
+                self.validate_defname(left)
             else:
+                s = left.value
+                ss = viml_split(s, "\\zs")
                 if ss[0] != "<" and ss[0] != "_" and not isupper(ss[0]) and viml_stridx(s, ":") == -1 and viml_stridx(s, "#") == -1:
                     raise VimLParserException(Err(viml_printf("E128: Function name must start with a capital or contain a colon: %s", s), left.pos))
         # :function {name}
@@ -1474,6 +1465,19 @@ class VimLParser:
                     raise VimLParserException(Err(viml_printf("unexpected token: %s", key), epos))
         self.add_node(node)
         self.push_context(node)
+
+    def validate_defname(self, left):
+        s = left.value
+        if viml_stridx(s, "#") != -1:
+            raise VimLParserException(Err("E1263: Cannot use name with # in Vim9 script, use export instead", left.pos))
+        i = 0
+        scope = s[0:1 + 1]
+        if scope == "s:":
+            raise VimLParserException(Err("E1268: Cannot use s: in Vim9 script", left.pos))
+        elif scope == "g:":
+            i = 2
+        if s[i] != "_" and not isupper(s[i]):
+            raise VimLParserException(Err(viml_printf("E1267: Function name must start with a capital: %s", s), left.pos))
 
     def parse_defarg(self, tokenizer, current_token):
         token = current_token
