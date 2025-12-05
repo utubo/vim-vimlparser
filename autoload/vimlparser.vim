@@ -565,6 +565,8 @@ function! s:VimLParser.parse_command_modifiers() abort
       call add(modifiers, {'name': 'botright'})
     elseif stridx('confirm', k) ==# 0 && len(k) >= 4 " conf\%[irm]
       call add(modifiers, {'name': 'confirm'})
+    elseif stridx('export', k) ==# 0 && len(k) >= 3 " exp\%[ort]
+      call add(modifiers, {'name': 'export'})
     elseif stridx('keepmarks', k) ==# 0 && len(k) >= 3 " kee\%[pmarks]
       call add(modifiers, {'name': 'keepmarks'})
     elseif stridx('keepalt', k) ==# 0 && len(k) >= 5 " keepa\%[lt]
